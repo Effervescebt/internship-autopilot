@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Internship Pipeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Schibsted+Grotesk:wght@600;700&display=swap">
+<style>
+:root {
+  --bg: #F3F5F4; --surface: #FFFFFF; --ink: #17201D; --muted: #5E6B66; --line: #DCE2DF;
+  --accent: #1F6F5C; --accent-soft: #E1EFEA;
+  --s-todo: #5E6B66; --s-applied: #2F5FA8; --s-oa: #9A6210; --s-interview: #6A4BB0;
+  --s-offer: #2E7D32; --s-rejected: #A33A3A; --s-skip: #8A9490;
+  --warn-bg: #FBF0DC; --warn-ink: #7A4E08;
+  --display: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #101513; --surface: #172019; --ink: #E4EAE7; --muted: #93A19B; --line: #29332F;
+    --accent: #5FC2A4; --accent-soft: #1C3029;
+    --s-todo: #93A19B; --s-applied: #7FA6E6; --s-oa: #E0A955; --s-interview: #AE95EC;
+    --s-offer: #74C47A; --s-rejected: #E78585; --s-skip: #6D7873;
+    --warn-bg: #33280F; --warn-ink: #E9C27C;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--body); padding: 28px 16px 48px; }
+.wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 20px; }
+header { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: end; justify-content: space-between; }
+h1 { font: 700 clamp(26px, 5vw, 34px)/1.1 var(--display); letter-spacing: -0.01em; margin: 0 0 6px; }
+.sub { color: var(--muted); font-size: 14px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.mono { font-family: var(--mono); font-size: 13px; }
+.save { display: grid; gap: 4px; justify-items: end; }
+.btn { border: 1px solid var(--accent); background: var(--accent); color: var(--bg); border-radius: 8px; padding: 8px 14px; font: 600 14px var(--body); cursor: pointer; }
+.btn[disabled] { opacity: .45; cursor: default; }
+.hint { font-size: 12px; color: var(--muted); }
+.funnel { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.stage { background: var(--surface); padding: 12px 14px; display: grid; gap: 2px; border: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.stage:hover { background: var(--accent-soft); }
+.stage[aria-pressed="true"] { background: var(--accent-soft); box-shadow: inset 0 -3px 0 var(--accent); }
+.stage .n { font: 600 24px/1.1 var(--mono); font-variant-numeric: tabular-nums; }
+.stage .l { font-size: 12px; letter-spacing: 0.04em; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: none; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.chip { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 5px 12px; font: 500 13px var(--body); cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.search { flex: 1 1 180px; min-width: 0; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 8px; padding: 7px 12px; font: 14px var(--body); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.day { display: grid; gap: 8px; }
+.day h2 { font: 600 13px var(--mono); color: var(--muted); margin: 6px 0 0; }
+.job { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; }
+.co { font: 600 16px/1.3 var(--display); }
+.tier { font: 500 11px var(--mono); color: var(--accent); border: 1px solid currentColor; border-radius: 4px; padding: 0 4px; margin-left: 6px; vertical-align: 2px; }
+.meta { display: flex; flex-wrap: wrap; gap: 4px 12px; color: var(--muted); font-size: 13px; align-items: center; grid-column: 1 / -1; }
+.pill { font: 500 12px var(--mono); border-radius: 4px; padding: 1px 6px; background: var(--accent-soft); color: var(--accent); }
+.fit { display: inline-flex; gap: 3px; align-items: center; }
+.fit i { width: 7px; height: 7px; border-radius: 2px; background: var(--line); }
+.fit i.on { background: var(--accent); }
+.visa { background: var(--warn-bg); color: var(--warn-ink); border-radius: 4px; padding: 1px 6px; font-size: 12px; }
+.side { display: grid; gap: 6px; justify-items: end; align-content: start; }
+select { font: 500 13px var(--body); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; background: var(--surface); color: var(--c, var(--ink)); cursor: pointer; }
+.links { display: flex; flex-wrap: wrap; gap: 4px 14px; justify-content: end; }
+.links a { color: var(--accent); font-weight: 500; font-size: 14px; text-decoration: none; white-space: nowrap; }
+.links a:hover { text-decoration: underline; }
+details { grid-column: 1 / -1; font-size: 13px; color: var(--muted); }
+details summary { cursor: pointer; width: fit-content; }
+details p { margin: 6px 0 0; max-width: 78ch; }
+.empty { color: var(--muted); padding: 24px 0; text-align: center; }
+@media (max-width: 600px) { .job { grid-template-columns: 1fr; } .side, .links { justify-items: start; justify-content: start; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Internship Pipeline</h1>
+      <div class="sub">
+        <span id="subtitle"></span>
+        <span class="mono" id="gen"></span>
+      </div>
+    </div>
+    <div class="save">
+      <button class="btn" id="save" disabled>Save statuses</button>
+      <span class="hint" id="savehint">Status changes are kept in this browser. Save them to copy them into applications.xlsx on the next run.</span>
+    </div>
+  </header>
+  <div class="funnel" id="funnel" role="group" aria-label="Filter by status"></div>
+  <div class="filters">
+    <button class="chip" id="f-today" aria-pressed="true">Latest day</button>
+    <button class="chip" id="f-all" aria-pressed="false">All days</button>
+    <span id="types"></span>
+    <input class="search" id="q" type="search" placeholder="Search company or title" aria-label="Search company or title">
+  </div>
+  <main id="list"></main>
+</div>
+<script>
+const DATA = /*__DATA__*/null || { generated: "", subtitle: "", jobs: [] };
+const STATUSES = [["To apply","--s-todo"],["Applied","--s-applied"],["OA","--s-oa"],["Interview","--s-interview"],["Offer","--s-offer"],["Rejected","--s-rejected"],["Skipped","--s-skip"]];
+const TYPES = ["All","SWE","MLE","Research","Data"];
+const KEY = "internship-autopilot-status-v1";
+const state = { day: "today", type: "All", status: null, q: "" };
+let local = {};
+try { local = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { local = {}; }
+const statusOf = (j) => {
+  const o = local[j.id];
+  if (o && (!j.statusUpdated || o.at > j.statusUpdated)) return o.status;
+  return j.status || "To apply";
+};
+const pending = () => DATA.jobs.filter(j => local[j.id] && statusOf(j) === local[j.id].status && local[j.id].status !== (j.status || "To apply")).length;
+const $ = (id) => document.getElementById(id);
+const el = (tag, attrs = {}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") n.className = v; else if (k === "style") n.style.cssText = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v); else n.setAttribute(k, v);
+  }
+  for (const k of kids.flat()) if (k != null) n.append(k);
+  return n;
+};
+const color = (s) => `var(${(STATUSES.find(x => x[0] === s) || STATUSES[0])[1]})`;
+const latest = () => DATA.jobs.reduce((m, j) => j.date > m ? j.date : m, "");
+
+function setStatus(j, value, sel) {
+  local[j.id] = { status: value, at: new Date().toISOString() };
+  try { localStorage.setItem(KEY, JSON.stringify(local)); } catch (e) {}
+  sel.style.setProperty("--c", color(value));
+  render();
+}
+
+function save() {
+  const statuses = {};
+  for (const j of DATA.jobs) if (local[j.id]) statuses[j.id] = local[j.id];
+  const blob = new Blob([JSON.stringify({ exported: new Date().toISOString(), statuses }, null, 1)], { type: "application/json" });
+  const a = el("a", { href: URL.createObjectURL(blob), download: "autopilot-status.json" });
+  document.body.append(a); a.click(); a.remove();
+  $("savehint").textContent = "Saved to your Downloads folder. The next run copies it into applications.xlsx.";
+}
+
+function row(j) {
+  const st = statusOf(j);
+  const sel = el("select", { "aria-label": `Status for ${j.company}`, style: `--c:${color(st)}`, onchange: (e) => setStatus(j, e.target.value, e.target) });
+  STATUSES.forEach(([s]) => { const o = el("option", { value: s }, s); if (s === st) o.selected = true; sel.append(o); });
+  const links = el("div", { class: "links" },
+    el("a", { href: j.url, target: "_blank", rel: "noopener" }, "Posting ↗"),
+    el("a", { href: j.pdf, target: "_blank" }, "Resume PDF"),
+    el("a", { href: j.jd, target: "_blank" }, "JD"));
+  const fit = el("span", { class: "fit", title: `Fit ${j.fit}/5` }, "fit ", ...[1,2,3,4,5].map(i => el("i", { class: i <= (j.fit || 0) ? "on" : "" })));
+  return el("article", { class: "job" },
+    el("div", {}, el("div", { class: "co" }, j.company, j.priority ? el("span", { class: "tier" }, "PRIORITY") : null), el("div", {}, j.title)),
+    el("div", { class: "side" }, sel, links),
+    el("div", { class: "meta" }, el("span", { class: "pill" }, j.role_type || "—"), el("span", {}, j.location || ""), fit,
+      j.visa_note ? el("span", { class: "visa" }, j.visa_note) : null),
+    el("details", {}, el("summary", {}, "Tailoring notes"), el("p", {}, j.notes || "")));
+}
+
+function render() {
+  $("f-today").setAttribute("aria-pressed", String(state.day === "today"));
+  $("f-all").setAttribute("aria-pressed", String(state.day === "all"));
+  const types = $("types"); types.replaceChildren();
+  TYPES.forEach(t => types.append(el("button", { class: "chip", "aria-pressed": String(state.type === t), style: "margin-right:6px", onclick: () => { state.type = t; render(); } }, t)));
+  const last = latest();
+  const scope = DATA.jobs.filter(j => state.day === "all" || j.date === last);
+  const f = $("funnel"); f.replaceChildren();
+  STATUSES.forEach(([s, v]) => f.append(el("button", { class: "stage", "aria-pressed": String(state.status === s), onclick: () => { state.status = state.status === s ? null : s; render(); } },
+    el("span", { class: "n" }, String(scope.filter(j => statusOf(j) === s).length)),
+    el("span", { class: "l" }, el("span", { class: "dot", style: `--c: var(${v})` }), s))));
+  const q = state.q.toLowerCase();
+  const shown = scope.filter(j => (state.type === "All" || j.role_type === state.type) && (!state.status || statusOf(j) === state.status) && (!q || `${j.company} ${j.title}`.toLowerCase().includes(q)));
+  const list = $("list"); list.replaceChildren();
+  if (!shown.length) { list.append(el("p", { class: "empty" }, DATA.jobs.length ? "No postings match these filters." : "No postings yet. They appear here after the first run.")); }
+  const byDay = {};
+  shown.forEach(j => (byDay[j.date] ||= []).push(j));
+  Object.keys(byDay).sort().reverse().forEach(d => {
+    const rows = byDay[d].sort((a, b) => (b.priority ? 1 : 0) - (a.priority ? 1 : 0) || (b.fit || 0) - (a.fit || 0));
+    list.append(el("section", { class: "day" }, el("h2", {}, `${d} · ${rows.length} postings`), rows.map(row)));
+  });
+  const n = pending();
+  $("save").disabled = n === 0;
+  $("save").textContent = n ? `Save statuses (${n} unsaved)` : "Save statuses";
+}
+
+$("subtitle").textContent = DATA.subtitle || "";
+$("gen").textContent = DATA.generated ? `Updated ${DATA.generated}` : "";
+$("f-today").onclick = () => { state.day = "today"; render(); };
+$("f-all").onclick = () => { state.day = "all"; render(); };
+$("q").addEventListener("input", (e) => { state.q = e.target.value; render(); });
+$("save").onclick = save;
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,2 @@
+# Optional: only needed for applications.xlsx. Everything else uses the Python standard library.
+openpyxl>=3.1

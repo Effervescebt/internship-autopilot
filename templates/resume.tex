@@ -1,0 +1,23 @@
+% One-page resume template for internship-autopilot. The program fills in the header and body below.
+\documentclass[11pt,letterpaper]{article}
+\usepackage[left=0.45in,right=0.45in,top=0.4in,bottom=0.35in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\renewcommand{\familydefault}{\sfdefault}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+\pagestyle{empty}
+\setlist[itemize]{leftmargin=1.3em,itemsep=0.05em,parsep=0em,topsep=0.1em}
+
+% \rsection{Title}: section heading with a rule underneath
+\newcommand{\rsection}[1]{\vspace{0.45em}{\bfseries\MakeUppercase{#1}}\par\vspace{-0.35em}\rule{\linewidth}{0.5pt}\par\vspace{0.1em}}
+% \entry{Organization}{Location}{Role}{Dates}
+\newcommand{\entry}[4]{\vspace{0.2em}{\bfseries #1}\hfill{\bfseries #2}\par #3\hfill{\itshape #4}\par}
+% \project{Name}{Dates}
+\newcommand{\project}[2]{\vspace{0.2em}{\bfseries #1}\hfill{\itshape #2}\par}
+
+\begin{document}
+$header
+$body
+\end{document}

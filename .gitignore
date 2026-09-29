@@ -1,0 +1,17 @@
+# Your personal files: never commit these.
+config.toml
+profile.toml
+output/
+tailored/
+
+# Python / LaTeX / OS
+__pycache__/
+*.pyc
+*.aux
+*.log
+*.out
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+.DS_Store
+.run.lock

@@ -1,0 +1,121 @@
+# Your resume material. Copy this file to profile.toml and replace everything with your own
+# experience. profile.toml is ignored by git. Everything below is a made-up example person.
+#
+# How tailoring uses this file:
+# - Each bullet lists keywords. A bullet scores one point per keyword found in the job description.
+# - Entries with core = true always appear (keep at least min_bullets of their bullets).
+# - Other entries and extra bullets are added best-first while the resume still fits the page limit.
+# Only write things you actually did: the program picks and orders bullets, it never invents them.
+
+[person]
+name = "Jordan Example"
+email = "jordan@example.com"
+phone = "(555) 010-0000"
+links = [
+  { text = "github.com/your-handle", url = "https://github.com/your-handle" },
+  { text = "your-site.example", url = "https://your-site.example" },
+]
+
+[[education]]
+school = "Example University"
+location = "City, ST"
+degree = "M.S. in Computer Science"
+dates = "Aug. 2026 -- Dec. 2027 (expected)"
+details = ["Coursework: Machine Learning, Distributed Systems, Algorithms"]
+
+[[education]]
+school = "Sample State University"
+location = "City, ST"
+degree = "B.S. in Computer Engineering; GPA 3.8/4.0"
+dates = "Aug. 2022 -- May 2026"
+
+[[section]]
+title = "Experience"
+
+  [[section.entries]]
+  heading = "Example Research Lab, Example University"
+  location = "City, ST"
+  role = "Research Assistant"
+  dates = "Jan. 2025 -- Present"
+  core = true
+  min_bullets = 2
+
+    [[section.entries.bullets]]
+    text = "Fine-tuned open-weight language models with LoRA in PyTorch and built evaluation scripts to compare model variants on reasoning benchmarks."
+    keywords = ["pytorch", "llm", "lora", "fine-tuning", "evaluation", "nlp", "machine learning", "python"]
+
+    [[section.entries.bullets]]
+    text = "Automated experiment tracking and batch inference jobs on a shared GPU cluster, cutting manual setup for each run."
+    keywords = ["experiment tracking", "gpu", "automation", "python", "linux", "infrastructure"]
+
+    [[section.entries.bullets]]
+    text = "Prepared and cleaned image datasets with OpenCV and pandas for a vision-language model project."
+    keywords = ["computer vision", "opencv", "pandas", "data", "preprocessing", "multimodal"]
+
+  [[section.entries]]
+  heading = "Sample Software Co."
+  location = "City, ST"
+  role = "Software Engineering Intern"
+  dates = "May 2025 -- Aug. 2025"
+  core = true
+  min_bullets = 2
+
+    [[section.entries.bullets]]
+    text = "Built REST API endpoints in Python (FastAPI) backed by PostgreSQL for an internal reporting tool."
+    keywords = ["python", "fastapi", "rest", "api", "backend", "postgresql", "sql"]
+
+    [[section.entries.bullets]]
+    text = "Containerized the service with Docker and added unit and integration tests to the CI pipeline."
+    keywords = ["docker", "testing", "ci/cd", "unit testing", "devops"]
+
+    [[section.entries.bullets]]
+    text = "Wrote a React dashboard page to display report status to operations staff."
+    keywords = ["react", "javascript", "typescript", "frontend", "web"]
+
+  [[section.entries]]
+  heading = "Example University"
+  location = "City, ST"
+  role = "Teaching Assistant, Data Structures"
+  dates = "Aug. 2024 -- May 2025"
+
+    [[section.entries.bullets]]
+    text = "Held weekly office hours and graded assignments for 150+ students in a data structures course."
+    keywords = ["data structures", "algorithms", "communication", "teaching"]
+
+[[section]]
+title = "Projects"
+
+  [[section.entries]]
+  heading = "Distributed Key-Value Store"
+  dates = "Fall 2025"
+
+    [[section.entries.bullets]]
+    text = "Implemented a replicated key-value store in Go with leader election and log replication across five nodes."
+    keywords = ["golang", "distributed systems", "consensus", "fault tolerance", "backend", "raft"]
+
+    [[section.entries.bullets]]
+    text = "Load-tested the cluster and fixed a snapshotting bug that caused stale reads after node restarts."
+    keywords = ["testing", "debugging", "performance", "reliability"]
+
+  [[section.entries]]
+  heading = "Toy Operating System Kernel"
+  dates = "Fall 2024"
+
+    [[section.entries.bullets]]
+    text = "Wrote a small kernel in C with virtual memory, a round-robin scheduler, and basic system calls, running on QEMU."
+    keywords = ["c", "c++", "operating systems", "linux", "concurrency", "systems", "low-level"]
+
+  [[section.entries]]
+  heading = "Course Recommendation App"
+  dates = "Spring 2024"
+
+    [[section.entries.bullets]]
+    text = "Built a course recommender with scikit-learn collaborative filtering and a small Flask web front end."
+    keywords = ["recommendation", "scikit-learn", "machine learning", "flask", "web", "python"]
+
+[skills]
+groups = [
+  { label = "Languages", items = ["Python", "C/C++", "Go", "Java", "SQL", "JavaScript"] },
+  { label = "ML & Data", items = ["PyTorch", "scikit-learn", "pandas", "NumPy", "OpenCV", "LoRA"] },
+  { label = "Tools", items = ["Linux", "Git", "Docker", "FastAPI", "PostgreSQL", "React"] },
+]

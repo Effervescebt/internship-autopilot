@@ -1,0 +1,40 @@
+# Copy this file to config.toml and edit it. config.toml is ignored by git.
+
+[search]
+# Term to look for in the SimplifyJobs list (it tags postings like "Summer 2027").
+term = "Summer 2027"
+simplify_listings_url = "https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/.github/scripts/listings.json"
+# SimplifyJobs categories to keep. Others include "Hardware", "Product", "Quant".
+categories = ["Software", "Software Engineering", "AI/ML/Data", "Data Science, AI & Machine Learning"]
+per_day = 20            # postings to tailor each run
+max_per_company = 3
+max_age_days = 14       # ignore postings older than this
+fresh_days = 2          # postings this new are always taken first
+# Companies listed here are preferred within each freshness group (case-insensitive substring match).
+priority_companies = ["google", "meta", "apple", "amazon", "microsoft", "nvidia", "openai", "anthropic",
+                      "netflix", "uber", "airbnb", "stripe", "databricks", "salesforce", "adobe"]
+# Regular expressions matched against the job title.
+title_must_match = ['\bintern']
+title_exclude = ['\b(fall|spring|winter)\b(?!.*\bsummer\b)', 'co-?op', '\bphd\b', '\bsenior\b',
+                 'mechanical', 'electrical', 'hardware', '\bsales\b', 'marketing', 'recruit',
+                 'business analyst']
+
+[eligibility]
+us_only = true
+skip_citizenship_required = true   # citizenship, green card, security clearance, ITAR
+skip_if_f1_excluded = true         # "not eligible for F-1 / CPT / OPT students"
+skip_phd_only = true
+note_no_sponsorship = true         # keep "no sponsorship" postings but add a note
+extra_skip_patterns = []           # e.g. ['must be located in Canada']
+
+[resume]
+page_limit = 1
+pdf_name = "Resume.pdf"
+availability = ""   # e.g. "Available May -- Aug. 2027", added to the resume header when set
+
+[dashboard]
+subtitle = "SWE · ML · Data internships"
+
+[paths]
+output_dir = "output"               # relative to the project folder, or an absolute path
+status_import_dir = "~/Downloads"   # where your browser saves autopilot-status.json

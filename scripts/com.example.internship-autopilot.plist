@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- macOS scheduler. Replace /PATH/TO/internship-autopilot (3 places), then see README "Run it every day". -->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.example.internship-autopilot</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>-l</string>
+    <string>/PATH/TO/internship-autopilot/scripts/run_daily.sh</string>
+  </array>
+  <!-- 10:00 daily; if asleep then, launchd runs it on wake -->
+  <key>StartCalendarInterval</key>
+  <dict><key>Hour</key><integer>10</integer><key>Minute</key><integer>0</integer></dict>
+  <!-- catch up after the Mac was off: check at login and every 30 minutes -->
+  <key>RunAtLoad</key><true/>
+  <key>StartInterval</key><integer>1800</integer>
+  <key>StandardOutPath</key><string>/PATH/TO/internship-autopilot/output/logs/launchd.out</string>
+  <key>StandardErrorPath</key><string>/PATH/TO/internship-autopilot/output/logs/launchd.err</string>
+</dict>
+</plist>
