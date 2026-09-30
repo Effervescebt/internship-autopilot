@@ -10,9 +10,12 @@
     <string>-l</string>
     <string>/PATH/TO/internship-autopilot/scripts/run_daily.sh</string>
   </array>
-  <!-- 10:00 daily; if asleep then, launchd runs it on wake -->
+  <!-- 10:00 and 21:00; if asleep then, launchd runs it on wake. Match schedule.run_hours in config.toml. -->
   <key>StartCalendarInterval</key>
-  <dict><key>Hour</key><integer>10</integer><key>Minute</key><integer>0</integer></dict>
+  <array>
+    <dict><key>Hour</key><integer>10</integer><key>Minute</key><integer>0</integer></dict>
+    <dict><key>Hour</key><integer>21</integer><key>Minute</key><integer>0</integer></dict>
+  </array>
   <!-- catch up after the Mac was off: check at login and every 30 minutes -->
   <key>RunAtLoad</key><true/>
   <key>StartInterval</key><integer>1800</integer>

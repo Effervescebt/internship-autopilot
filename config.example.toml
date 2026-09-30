@@ -6,7 +6,7 @@ term = "Summer 2027"
 simplify_listings_url = "https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/.github/scripts/listings.json"
 # SimplifyJobs categories to keep. Others include "Hardware", "Product", "Quant".
 categories = ["Software", "Software Engineering", "AI/ML/Data", "Data Science, AI & Machine Learning"]
-per_day = 20            # postings to tailor each run
+per_day = 20            # postings per day, split evenly across schedule.run_hours
 max_per_company = 3
 max_age_days = 14       # ignore postings older than this
 fresh_days = 2          # postings this new are always taken first
@@ -18,6 +18,11 @@ title_must_match = ['\bintern']
 title_exclude = ['\b(fall|spring|winter)\b(?!.*\bsummer\b)', 'co-?op', '\bphd\b', '\bsenior\b',
                  'mechanical', 'electrical', 'hardware', '\bsales\b', 'marketing', 'recruit',
                  'business analyst']
+
+[schedule]
+# Hours (24h, local time) at which scheduled runs start. Two runs catch postings published during the
+# day. A run that starts after earlier runs were missed adds their share as well.
+run_hours = [10, 21]
 
 [eligibility]
 us_only = true

@@ -1,14 +1,12 @@
 #!/bin/sh
-# Daily wrapper for schedulers (launchd / cron). Runs `python3 -m autopilot run` at most once per day,
-# and only after RUN_HOUR, so it can be triggered repeatedly (at login, every 30 minutes) to catch up
-# after the computer was asleep or off.
-RUN_HOUR=${RUN_HOUR:-10}
+# Scheduler wrapper for launchd / cron. Trigger it often (at login and every 30 minutes); it runs the
+# pipeline only when a slot from schedule.run_hours in config.toml has started and is not yet complete.
+# Default slots are 10:00 and 21:00, so postings published during the day are picked up the same evening.
 cd "$(dirname "$0")/.." || exit 1
 mkdir -p output/logs
 TODAY=$(date +%F)
 
-[ "$(date +%H)" -lt "$RUN_HOUR" ] && exit 0
-grep -q "^RUN_COMPLETE $TODAY" "output/logs/$TODAY.md" 2>/dev/null && exit 0
+SLOT=$(python3 -m autopilot due) || exit 0
 
 # One run at a time; clear a stale lock older than 3 hours.
 LOCK=.run.lock
@@ -17,8 +15,8 @@ if ! mkdir "$LOCK" 2>/dev/null; then
 fi
 trap 'rm -rf "$LOCK"' EXIT
 
-# Give up after 3 failed attempts in one day.
-ATTEMPTS="output/logs/.attempts-$TODAY"
+# Give up on a slot after 3 failed attempts.
+ATTEMPTS="output/logs/.attempts-$TODAY-$SLOT"
 n=$(( $(cat "$ATTEMPTS" 2>/dev/null || echo 0) + 1 ))
 [ "$n" -gt 3 ] && exit 0
 echo "$n" > "$ATTEMPTS"
@@ -27,13 +25,14 @@ echo "$n" > "$ATTEMPTS"
 KEEPAWAKE=""
 command -v caffeinate >/dev/null && KEEPAWAKE="caffeinate -i"
 
-$KEEPAWAKE python3 -m autopilot run >> "output/logs/run-$TODAY.out" 2>&1
+$KEEPAWAKE python3 -m autopilot scheduled >> "output/logs/run-$TODAY-$SLOT.out" 2>&1
 
+LOG="output/logs/$TODAY-$SLOT.md"
 if command -v osascript >/dev/null; then
-  if grep -q "^RUN_COMPLETE $TODAY" "output/logs/$TODAY.md" 2>/dev/null; then
-    N=$(grep "^RUN_COMPLETE $TODAY" "output/logs/$TODAY.md" | awk '{print $3}')
+  if grep -q "^RUN_COMPLETE $TODAY $SLOT" "$LOG" 2>/dev/null; then
+    N=$(grep "^RUN_COMPLETE $TODAY $SLOT" "$LOG" | awk '{print $4}')
     osascript -e "display notification \"$N new postings. Open output/Dashboard.html\" with title \"Internship Autopilot\""
   else
-    osascript -e 'display notification "Run did not finish; will retry later" with title "Internship Autopilot"'
+    osascript -e 'display notification "Run did not finish; it will be retried" with title "Internship Autopilot"'
   fi
 fi

@@ -1,9 +1,11 @@
 """Command line: python3 -m autopilot <command>
 
-  run      find today's new postings, tailor a resume for each, update Dashboard.html (the daily job)
-  build    only regenerate Dashboard.html / applications.xlsx (and import saved statuses)
-  tailor   tailor one resume by hand:  python3 -m autopilot tailor "Job title" jd.txt [out_folder]
-  status   show how many postings were added today
+  scheduled  run if a scheduled slot is due (used by scripts/run_daily.sh); otherwise exit quietly
+  due        print the name of the slot that is due and not yet complete (exit status 1 if none)
+  run [N]    run now: add N postings (default: one slot's quota)
+  build      regenerate Dashboard.html / applications.xlsx and import saved statuses
+  tailor     tailor one resume by hand:  python3 -m autopilot tailor "Job title" jd.txt [out_folder]
+  status     show how many postings were added today
 """
 import datetime as dt
 import re
@@ -11,7 +13,7 @@ import sys
 import time
 from pathlib import Path
 
-from . import filters, sources, tailor
+from . import filters, schedule, sources, tailor
 from .config import load_config, load_profile
 from .tracker import Store
 
@@ -25,12 +27,14 @@ def ranked_candidates(cfg, store):
     today = dt.date.today()
     priority = [c.lower() for c in s.get("priority_companies", [])]
     fresh = s.get("fresh_days", 2)
+    skip_citizenship = cfg["eligibility"].get("skip_citizenship_required", True)
     out = []
     for c in sources.fetch_candidates(cfg):
         if not filters.title_ok(c["title"], cfg) or not filters.location_ok(c["location"], cfg):
             continue
-        if store.is_seen(c) or c.get("sponsorship") == "U.S. Citizenship is Required" and \
-                cfg["eligibility"].get("skip_citizenship_required", True):
+        if store.is_seen(c):
+            continue
+        if skip_citizenship and c.get("sponsorship") == "U.S. Citizenship is Required":
             continue
         try:
             c["age"] = (today - dt.date.fromisoformat(c["posted"])).days
@@ -41,9 +45,8 @@ def ranked_candidates(cfg, store):
     # newest first (fresh window, then within a week, then older); priority companies first in each
     bucket = lambda c: 0 if c["age"] <= fresh else 1 if c["age"] <= 7 else 2
     out.sort(key=lambda c: (bucket(c), not c["priority"], c["age"]))
-    # one posting per (company, title)
     seen, uniq = set(), []
-    for c in out:
+    for c in out:  # one posting per (company, title)
         k = (c["company"].lower(), c["title"].lower())
         if k not in seen:
             seen.add(k)
@@ -51,23 +54,50 @@ def ranked_candidates(cfg, store):
     return uniq
 
 
-def run():
+def schedule_settings(cfg):
+    hours = cfg.get("schedule", {}).get("run_hours", [10, 21])
+    return hours, cfg["search"].get("per_day", 20)
+
+
+def log_path(cfg, day, slot):
+    return cfg["paths"]["output_dir"] / "logs" / f"{day}-{slot}.md"
+
+
+def slot_complete(cfg, day, slot):
+    try:
+        return f"RUN_COMPLETE {day} {slot}" in log_path(cfg, day, slot).read_text()
+    except FileNotFoundError:
+        return False
+
+
+def due_slot(cfg):
+    """(slot name, slot hour) if a scheduled run is due and not complete, else None."""
+    hours, _ = schedule_settings(cfg)
+    hour = schedule.current_slot(dt.datetime.now().hour, hours)
+    if hour is None:
+        return None
+    name = schedule.slot_name(hour)
+    return None if slot_complete(cfg, dt.date.today().isoformat(), name) else (name, hour)
+
+
+def run(target, slot):
     cfg, profile = load_config(), load_profile()
     store = Store(cfg)
     store.import_statuses()
     today = dt.date.today().isoformat()
     day_dir = cfg["paths"]["output_dir"] / "applications" / today
-    s = cfg["search"]
-    per_day, per_company = s.get("per_day", 20), s.get("max_per_company", 3)
-    done_today = [j for j in store.jobs if j["date"] == today]
-    added, skipped, per_co = len(done_today), [], {}
-    for j in done_today:
-        per_co[j["company"]] = per_co.get(j["company"], 0) + 1
+    per_company = cfg["search"].get("max_per_company", 3)
+    per_co = {}
+    for j in store.jobs:
+        if j["date"] == today:
+            per_co[j["company"]] = per_co.get(j["company"], 0) + 1
+    index = len([p for p in day_dir.iterdir() if p.is_dir()]) if day_dir.exists() else 0
+    added, skipped = 0, []
 
     cands = ranked_candidates(cfg, store)
-    print(f"{len(cands)} new candidates")
+    print(f"{slot}: {len(cands)} new candidates, target {target}")
     for c in cands:
-        if added >= per_day:
+        if added >= target:
             break
         if per_co.get(c["company"], 0) >= per_company:
             continue
@@ -79,12 +109,13 @@ def run():
             skipped.append((c, reason))
             continue
         added += 1
-        folder = day_dir / f"{added:02d}_{slug(c['company'])}_{slug(c['title'], 30)}"
-        print(f"[{added}/{per_day}] {c['company']} - {c['title']}")
+        index += 1
+        folder = day_dir / f"{index:02d}_{slug(c['company'])}_{slug(c['title'], 30)}"
+        print(f"[{added}/{target}] {c['company']} - {c['title']}")
         fit, notes = tailor.tailor(profile, cfg, c["title"], jd, folder)
         (folder / "jd.txt").write_text(f"{c['company']} - {c['title']}\n{c['location']}\n{c['url']}\n\n{jd}")
         rel = folder.relative_to(cfg["paths"]["output_dir"])
-        store.add({"id": c["id"], "date": today, "company": c["company"], "title": c["title"],
+        store.add({"id": c["id"], "date": today, "slot": slot, "company": c["company"], "title": c["title"],
                    "location": c["location"], "url": c["url"], "posted": c["posted"],
                    "role_type": filters.role_type(c["title"]), "priority": c["priority"], "fit": fit,
                    "visa_note": visa, "notes": notes, "status": "To apply",
@@ -92,30 +123,46 @@ def run():
                    "jd": str(rel / "jd.txt")})
         per_co[c["company"]] = per_co.get(c["company"], 0) + 1
     store.build()
-    write_log(cfg, today, store, skipped, added)
+    write_log(cfg, today, slot, store, skipped, added)
 
 
-def write_log(cfg, today, store, skipped, added):
-    log = cfg["paths"]["output_dir"] / "logs" / f"{today}.md"
+def write_log(cfg, today, slot, store, skipped, added):
+    log = log_path(cfg, today, slot)
     log.parent.mkdir(parents=True, exist_ok=True)
-    rows = [j for j in store.jobs if j["date"] == today]
-    lines = [f"# {today}\n", "| Company | Title | Type | Fit | Visa note |", "|---|---|---|---|---|"]
+    rows = [j for j in store.jobs if j["date"] == today and j.get("slot") == slot]
+    lines = [f"# {today} ({slot})\n", "| Company | Title | Type | Fit | Visa note |", "|---|---|---|---|---|"]
     lines += [f"| {j['company']} | {j['title']} | {j['role_type']} | {j['fit']} | {j['visa_note']} |" for j in rows]
     reasons = {}
     for _, r in skipped:
         reasons[r] = reasons.get(r, 0) + 1
     lines += ["", f"Skipped {len(skipped)}: " + ", ".join(f"{r} ({n})" for r, n in reasons.items()), "",
-              f"RUN_COMPLETE {today} {added}"]
+              f"RUN_COMPLETE {today} {slot} {added}"]
     log.write_text("\n".join(lines) + "\n")
-    print(f"done: {added} postings today; log at {log}")
+    print(f"done: {added} postings in this run; log at {log}")
 
 
 def main(argv):
     if not argv or argv[0] in ("-h", "--help"):
         sys.exit(__doc__)
     cmd = argv[0]
-    if cmd == "run":
-        run()
+    if cmd in ("scheduled", "due"):
+        cfg = load_config()
+        slot = due_slot(cfg)
+        if cmd == "due":
+            print(slot[0] if slot else "")
+            sys.exit(0 if slot else 1)
+        if not slot:
+            print("no scheduled run is due")
+            return
+        hours, per_day = schedule_settings(cfg)
+        today = dt.date.today().isoformat()
+        done = sum(j["date"] == today for j in Store(cfg).jobs)
+        run(schedule.target(slot[1], hours, per_day, done), slot[0])
+    elif cmd == "run":
+        cfg = load_config()
+        hours, per_day = schedule_settings(cfg)
+        n = int(argv[1]) if len(argv) > 1 else max(schedule.quotas(hours, per_day).values())
+        run(n, "manual-" + dt.datetime.now().strftime("%H%M"))
     elif cmd == "build":
         Store(load_config()).build()
     elif cmd == "tailor":

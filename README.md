@@ -1,6 +1,8 @@
 # internship-autopilot
 
-A local pipeline that collects new internship postings each day, filters out postings the user is not
+[![tests](https://github.com/Effervescebt/internship-autopilot/actions/workflows/tests.yml/badge.svg)](https://github.com/Effervescebt/internship-autopilot/actions/workflows/tests.yml)
+
+A local pipeline that collects new internship postings twice a day, filters out postings the user is not
 eligible for, and generates a one-page resume tailored to each remaining posting. Results are tracked in
 a static HTML dashboard and a spreadsheet.
 
@@ -22,8 +24,9 @@ on any AI service.
   never generates new content.
 - Tracking: a self-contained `Dashboard.html` with status tracking (To apply, Applied, OA, Interview,
   Offer, Rejected, Skipped) and an `applications.xlsx` summary, both regenerated on every run.
-- Scheduling: a wrapper script for launchd (macOS) or cron (Linux) that runs once per day and catches up
-  after the computer was asleep or powered off.
+- Scheduling: runs at configurable hours (10:00 and 21:00 by default), splitting the daily quota across
+  runs so that postings published during the day are picked up the same evening. A run that follows
+  missed runs makes up their share. Works with launchd (macOS) or cron (Linux).
 
 ## Architecture
 
@@ -33,19 +36,21 @@ autopilot/
   filters.py   title, location and eligibility rules; role classification
   tailor.py    keyword scoring, greedy page packing, LaTeX rendering and compilation
   tracker.py   de-duplication state, job records, status import, dashboard and spreadsheet output
-  __main__.py  command-line interface and the daily run
+  schedule.py  run slots and per-run quotas
+  __main__.py  command-line interface and the run loop
 templates/     LaTeX resume template and dashboard template
-scripts/       daily wrapper script and launchd example
+scripts/       scheduler wrapper script and launchd example
+tests/         unit tests for filtering and scheduling
 ```
 
-A daily run proceeds as follows:
+Each run proceeds as follows:
 
 1. Import any statuses saved from the dashboard.
 2. Download candidate postings, drop previously seen ones, and rank the rest.
 3. For each candidate, fetch the job description and apply the eligibility rules. Rejected postings are
    recorded so they are not reconsidered.
-4. Tailor and compile a resume for each accepted posting until the daily quota is reached.
-5. Regenerate the dashboard, the spreadsheet and the daily log.
+4. Tailor and compile a resume for each accepted posting until the run's quota is reached.
+5. Regenerate the dashboard, the spreadsheet and the run log.
 
 State is stored as JSON under `output/data/`. The dashboard embeds its data at build time, so it opens
 directly from disk without a server.
@@ -70,8 +75,8 @@ cp profile.example.toml profile.toml
 
 ## Configuration
 
-`config.toml` controls the search term, SimplifyJobs categories, daily quota, per-company limit, title
-filters, eligibility rules, page limit and output paths. Each option is documented in
+`config.toml` controls the search term, SimplifyJobs categories, daily quota, run hours, per-company
+limit, title filters, eligibility rules, page limit and output paths. Each option is documented in
 `config.example.toml`.
 
 `profile.toml` holds the resume content: contact details, education, sections with entries and bullets,
@@ -85,7 +90,7 @@ Guidelines for writing it:
 ## Usage
 
 ```sh
-python3 -m autopilot run      # run the daily pipeline
+python3 -m autopilot run      # run now (one run's quota; pass a number to override)
 python3 -m autopilot build    # regenerate the dashboard and spreadsheet only
 python3 -m autopilot status   # number of postings added today
 python3 -m autopilot tailor "Machine Learning Intern" jd.txt out_dir   # tailor a single resume
@@ -100,9 +105,23 @@ and the next run imports them into the records and the spreadsheet.
 
 ## Scheduling
 
-`scripts/run_daily.sh` runs the pipeline at most once per day and only after the hour given by
-`RUN_HOUR` (default 10). It is designed to be triggered repeatedly; later triggers exit immediately once
-the day's run has completed. It retries up to three times per day and keeps macOS awake during a run.
+Run hours are set in `config.toml`:
+
+```toml
+[search]
+per_day = 20          # split evenly across the runs below
+
+[schedule]
+run_hours = [10, 21]  # 10 postings at 10:00 and 10 at 21:00
+```
+
+The evening run fetches the source again, so postings published during the day are considered on the
+same day rather than the next morning. If the computer was asleep or off during an earlier run, the next
+run adds that run's share as well (for example, 20 postings at 21:00 when the 10:00 run was missed).
+
+`scripts/run_daily.sh` is meant to be triggered frequently (at login and every 30 minutes). It asks
+`python3 -m autopilot due` whether a run has started and is not yet complete, runs it if so, retries a
+failed run up to three times, and keeps macOS awake while running.
 
 macOS (launchd):
 
@@ -120,6 +139,15 @@ Linux (cron), checking every 30 minutes:
 ```
 */30 * * * * /path/to/internship-autopilot/scripts/run_daily.sh
 ```
+
+## Testing
+
+```sh
+python3 -m unittest discover -s tests -v
+```
+
+The tests cover the eligibility rules, title and location filters, and run scheduling. They need
+neither network access nor LaTeX, and run on every push through GitHub Actions.
 
 ## Extending
 
