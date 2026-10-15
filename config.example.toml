@@ -29,7 +29,13 @@ us_only = true
 skip_citizenship_required = true   # citizenship, green card, security clearance, ITAR
 skip_if_f1_excluded = true         # "not eligible for F-1 / CPT / OPT students"
 skip_phd_only = true
-note_no_sponsorship = true         # keep "no sponsorship" postings but add a note
+# Postings that explicitly refuse visa sponsorship for the role ("will not sponsor", "now or in the
+# future", "authorized to work for any employer"). Set skip_no_sponsorship = true to skip them, e.g. if your
+# school may not approve CPT and you would need pre-completion OPT. Otherwise they are kept with a note.
+# Borderline postings (only no sponsorship for a later full-time role, or no sponsorship but F-1/CPT
+# welcome) are always kept and noted "[Borderline]"; postings that say nothing are noted "[No sponsorship info]".
+skip_no_sponsorship = false
+note_no_sponsorship = true
 extra_skip_patterns = []           # e.g. ['must be located in Canada']
 
 [resume]

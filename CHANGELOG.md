@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.3.0 - 2026-10-15
+
+### Added
+
+- `eligibility.skip_no_sponsorship` (off by default) skips postings that explicitly refuse visa
+  sponsorship for the role, including "now or in the future" and "authorized to work for any employer".
+- Every kept posting gets a sponsorship note: `[No sponsorship]`, `[Borderline]` (no sponsorship only for
+  a later full-time role, or no sponsorship but F-1/CPT students eligible) or `[No sponsorship info]`
+  (the job description does not mention sponsorship or work authorization).
+- `autopilot/skills.py`: skills the job description mentions move to the front of each skills line, and
+  each line is trimmed to exactly one rendered line using widths measured by LaTeX.
+- Skills groups accept an `extra` list of skills that are shown only when a posting asks for them.
+- The resume notes list JD skills you have that did not fit on the skills lines.
+
+### Changed
+
+- `run_daily.sh` waits up to five minutes for the network after a wake or boot before running.
+
 ## 0.2.0 - 2026-09-30
 
 ### Changed

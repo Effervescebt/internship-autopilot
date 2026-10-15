@@ -10,6 +10,7 @@ import subprocess
 from pathlib import Path
 from string import Template
 
+from . import skills
 from .config import ROOT
 
 # Common JD technologies, used only to report "gaps" (asked for but not in your profile).
@@ -19,7 +20,7 @@ TECH_TERMS = [
     "airflow", "dbt", "snowflake", "aws", "gcp", "azure", "docker", "kubernetes", "terraform", "linux",
     "git", "pytorch", "tensorflow", "jax", "hugging face", "langchain", "llm", "nlp", "computer vision",
     "reinforcement learning", "recommendation", "ranking", "distributed systems", "microservices",
-    "graphql", "ci/cd", "tableau", "pandas", "numpy", "scikit-learn", "cuda",
+    "graphql", "ci/cd", "tableau", "pandas", "numpy", "scikit-learn", "cuda", "scala", "matlab",
 ]
 
 LATEX_SPECIAL = {"\\": r"\textbackslash{}", "&": r"\&", "%": r"\%", "$": r"\$", "#": r"\#",
@@ -71,11 +72,7 @@ def entry_tex(entry, bullets):
     return head + "\n\\begin{itemize}\n" + items + "\\end{itemize}"
 
 
-def skills_tex(p, title, text):
-    lines = []
-    for g in p.get("skills", {}).get("groups", []):
-        items = sorted(g["items"], key=lambda i: not hits(i, text))  # JD matches first
-        lines.append(rf"{{\bfseries {esc(g['label'])}:}} {esc(', '.join(items))}")
+def skills_tex(lines):
     return r"\rsection{Skills}" + "\n" + "\\\\\n".join(lines) if lines else ""
 
 
@@ -100,6 +97,8 @@ class Plan:
                     # an entry's first bullet carries the heading's cost, so rank it slightly lower
                     self.queue.append((s - (0.5 if rank == 0 and not entry.get("core") else 0), si, ei, bi))
         self.queue.sort(key=lambda x: -x[0])
+        groups = profile.get("skills", {}).get("groups", [])
+        self.skill_lines, self.skills_shown, self.skills_missing = skills.fit_groups(groups, text)
 
     def render(self, cfg, drop_edu_details=False):
         body = [education_tex(self.p, drop_edu_details)]
@@ -111,7 +110,7 @@ class Plan:
                     parts.append(entry_tex(entry, [entry["bullets"][b] for b in bis]))
             if parts:
                 body.append(rf"\rsection{{{esc(sec['title'])}}}" + "\n" + "\n".join(parts))
-        body.append(skills_tex(self.p, self.title, self.text))
+        body.append(skills_tex(self.skill_lines))
         tpl = Template((ROOT / "templates" / "resume.tex").read_text())
         return tpl.substitute(header=header_tex(self.p, cfg), body="\n".join(body))
 
@@ -120,9 +119,7 @@ class Plan:
         for (si, ei), bis in self.chosen.items():
             for bi in bis:
                 kws |= {k.lower() for k in self.p["section"][si]["entries"][ei]["bullets"][bi].get("keywords", [])}
-        for g in self.p.get("skills", {}).get("groups", []):
-            kws |= {i.lower() for i in g["items"]}
-        return kws
+        return kws | {i.lower() for i in self.skills_shown}
 
     def summary(self):
         names = []
@@ -187,6 +184,8 @@ def tailor(profile, cfg, title, jd, folder):
     fit = 3 if len(wanted) < 3 else max(1, min(5, round(1 + 4 * len(matched) / len(wanted))))
     notes = (f"Included: {', '.join(plan.summary())}. Matched: {', '.join(matched) or '-'}. "
              f"Gaps: {', '.join(gaps) or '-'}.")
+    if plan.skills_missing:
+        notes += f" JD skills you have that did not fit the skills lines: {', '.join(plan.skills_missing)}."
     if not jd:
         notes = "No job description could be downloaded; tailored on the title only. " + notes
     return fit, notes

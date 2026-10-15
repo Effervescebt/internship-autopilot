@@ -21,6 +21,9 @@ n=$(( $(cat "$ATTEMPTS" 2>/dev/null || echo 0) + 1 ))
 [ "$n" -gt 3 ] && exit 0
 echo "$n" > "$ATTEMPTS"
 
+# After a wake or boot the network can take a while to come back; wait up to 5 minutes for it.
+for i in $(seq 1 20); do curl -s -m 5 -o /dev/null https://raw.githubusercontent.com && break; sleep 15; done
+
 # Keep a Mac awake while running (the display may still turn off).
 KEEPAWAKE=""
 command -v caffeinate >/dev/null && KEEPAWAKE="caffeinate -i"

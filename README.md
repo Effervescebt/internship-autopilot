@@ -16,12 +16,18 @@ on any AI service.
 - Job descriptions: retrieved through the public Greenhouse, Lever and Ashby posting APIs where
   available, with a plain HTML fallback.
 - Eligibility filtering: rule-based checks for citizenship or security-clearance requirements, exclusion
-  of F-1/CPT/OPT students, PhD-only roles, non-US locations and off-cycle terms. Postings that only state
-  that visa sponsorship is not offered are kept and annotated.
+  of F-1/CPT/OPT students, PhD-only roles, non-US locations and off-cycle terms. Postings that explicitly
+  refuse visa sponsorship are kept with a note, or skipped with `skip_no_sponsorship = true`. Borderline
+  postings (no sponsorship only for a later full-time role, or no sponsorship but F-1/CPT welcome) and
+  postings that do not mention sponsorship at all are kept and tagged `[Borderline]` or
+  `[No sponsorship info]`.
 - Resume tailoring: each bullet in the user's profile carries keywords; bullets are scored against the
   job title and description, and the highest-scoring material is added greedily until the page limit is
   reached, verified by compiling the LaTeX output. The tool selects and orders the user's own bullets and
   never generates new content.
+- Skills section: skills the job description mentions are moved to the front of each line, and skills
+  marked `extra` in the profile are added only when a posting asks for them. Each line is trimmed to fit
+  exactly one rendered line, measured by LaTeX, and JD skills that did not fit are listed in the notes.
 - Tracking: a self-contained `Dashboard.html` with status tracking (To apply, Applied, OA, Interview,
   Offer, Rejected, Skipped) and an `applications.xlsx` summary, both regenerated on every run.
 - Scheduling: runs at configurable hours (10:00 and 21:00 by default), splitting the daily quota across
@@ -35,12 +41,13 @@ autopilot/
   sources.py   posting sources (SimplifyJobs) and job-description retrieval
   filters.py   title, location and eligibility rules; role classification
   tailor.py    keyword scoring, greedy page packing, LaTeX rendering and compilation
+  skills.py    skills section ordering and one-line fitting
   tracker.py   de-duplication state, job records, status import, dashboard and spreadsheet output
   schedule.py  run slots and per-run quotas
   __main__.py  command-line interface and the run loop
 templates/     LaTeX resume template and dashboard template
 scripts/       scheduler wrapper script and launchd example
-tests/         unit tests for filtering and scheduling
+tests/         unit tests for filtering, scheduling and the skills section
 ```
 
 Each run proceeds as follows:
@@ -146,8 +153,9 @@ Linux (cron), checking every 30 minutes:
 python3 -m unittest discover -s tests -v
 ```
 
-The tests cover the eligibility rules, title and location filters, and run scheduling. They need
-neither network access nor LaTeX, and run on every push through GitHub Actions.
+The tests cover the eligibility rules, title and location filters, run scheduling and the skills section.
+They need no network access; the skills line-fitting test runs only when LaTeX is installed. The tests run
+on every push through GitHub Actions.
 
 ## Extending
 

@@ -12,7 +12,23 @@ F1_EXCLUDED = re.compile(
     r"not (be )?eligible for (any )?(international students|f-?1|j-?1|cpt|opt|visa)|"
     r"(f-?1|j-?1|cpt|opt)[^.]{0,40}(are|is) not eligible|"
     r"cannot (accept|consider) (students on |candidates on )?(f-?1|cpt|opt)", re.I)
-NO_SPONSOR = re.compile(r"(not|unable to|will not|cannot|won't) (to )?(provide |offer )?(visa )?sponsor", re.I)
+NO_SPONSOR = re.compile(r"(not|unable to|will not|cannot|won't) (to )?(provide |offer )?(visa )?sponsor|"
+                        r"(not|un)able to (provide |offer )?(visa |immigration )?sponsorship|"
+                        r"(not|without) (requiring|require|need|needing) (current or future |now or in the future )?"
+                        r"(visa |employment |immigration )?sponsorship|"
+                        r"sponsorship (is )?not (available|offered|provided)", re.I)
+# Explicit refusals that also cover the internship itself.
+NOW_OR_FUTURE = re.compile(r"(now or in the future|current or future|currently or in the future|"
+                           r"now or at any (point|time) in the future)[^.]{0,60}sponsor|"
+                           r"sponsor[^.]{0,60}(now or in the future|current or future|currently or in the future)",
+                           re.I)
+ANY_EMPLOYER = re.compile(r"authori[sz]ed to work (in the u\.?s\.? )?for any employer", re.I)
+# Statements that only rule out sponsorship for a later full-time role.
+FUTURE_ONLY = re.compile(r"(future|full[- ]time|conversion|return offer|post[- ]graduation|after graduation)"
+                         r"[^.]{0,60}sponsor|sponsor[^.]{0,60}(future (full[- ]time )?employment|full[- ]time|"
+                         r"conversion|return offer|after graduation|upon graduation)", re.I)
+AUTH_MENTION = re.compile(r"sponsor|work authori[sz]ation|authori[sz]ed to work|\bvisa\b|\bcpt\b|\bopt\b|f-?1\b",
+                          re.I)
 CPT_WELCOME = re.compile(r"(f-?1|cpt)[^.]{0,60}(eligible|welcome|accepted)", re.I)
 PHD_ONLY = re.compile(r"(must be|currently) (currently )?(pursuing|enrolled in) a ph\.?d|"
                       r"(obtaining|pursuing) a ph\.?d\.? degree|\(phd\)|phd intern", re.I)
@@ -42,6 +58,41 @@ def role_type(title):
     return "SWE"
 
 
+def sponsorship_status(c, jd):
+    """Classify what a posting says about visa sponsorship.
+
+    Returns "refuses" (explicitly no sponsorship for this role), "future_only" (only rules out sponsoring a
+    later full-time role), "refuses_but_cpt" (no sponsorship, but F-1/CPT students are eligible),
+    "cpt_welcome", "unstated" (nothing about sponsorship or work authorization), "unknown" (no job
+    description), or "other" (mentions work authorization without a clear refusal).
+    """
+    text = f"{c['title']}\n{jd}"
+    tagged = c.get("sponsorship") == "Does Not Offer Sponsorship"
+    refusal = tagged or bool(NO_SPONSOR.search(text) or ANY_EMPLOYER.search(text) or NOW_OR_FUTURE.search(text))
+    if CPT_WELCOME.search(text):
+        return "refuses_but_cpt" if refusal else "cpt_welcome"
+    if ANY_EMPLOYER.search(text) or NOW_OR_FUTURE.search(text):
+        return "refuses"
+    if FUTURE_ONLY.search(text):
+        return "future_only"
+    if refusal:
+        return "refuses"
+    if not jd:
+        return "unknown"
+    return "other" if AUTH_MENTION.search(text) else "unstated"
+
+
+VISA_NOTES = {
+    "refuses": "[No sponsorship] States no visa sponsorship; confirm CPT/OPT is fine with the recruiter",
+    "future_only": "[Borderline] Only rules out sponsorship for a later full-time role",
+    "refuses_but_cpt": "[Borderline] States no sponsorship, but says F-1/CPT students are eligible",
+    "cpt_welcome": "JD says F-1/CPT students are eligible",
+    "unstated": "[No sponsorship info] JD does not mention sponsorship or work authorization",
+    "unknown": "[No sponsorship info] No job description available",
+    "other": "",
+}
+
+
 def eligibility(c, jd, cfg):
     """Return (skip_reason or None, visa_note)."""
     e = cfg["eligibility"]
@@ -56,10 +107,9 @@ def eligibility(c, jd, cfg):
     for pattern in e.get("extra_skip_patterns", []):
         if re.search(pattern, text, re.I):
             return f"matches skip pattern: {pattern}", ""
-    note = ""
-    if CPT_WELCOME.search(text):
-        note = "JD says F-1/CPT students are eligible"
-    elif e.get("note_no_sponsorship", True) and (
-            c.get("sponsorship") == "Does Not Offer Sponsorship" or NO_SPONSOR.search(text)):
-        note = "States no sponsorship; interns on CPT usually fine, confirm with recruiter"
-    return None, note
+    status = sponsorship_status(c, jd)
+    if status == "refuses" and e.get("skip_no_sponsorship", False):
+        return "no visa sponsorship", ""
+    if status == "refuses" and not e.get("note_no_sponsorship", True):
+        return None, ""
+    return None, VISA_NOTES[status]

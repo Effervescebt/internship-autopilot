@@ -113,9 +113,12 @@ title = "Projects"
     text = "Built a course recommender with scikit-learn collaborative filtering and a small Flask web front end."
     keywords = ["recommendation", "scikit-learn", "machine learning", "flask", "web", "python"]
 
+# Each group is one line. Skills the job description mentions move to the front, and each line is trimmed
+# (measured by LaTeX) so it never wraps. `extra` lists skills you have that are shown only when a posting
+# asks for them. List only skills you can talk about in an interview.
 [skills]
 groups = [
-  { label = "Languages", items = ["Python", "C/C++", "Go", "Java", "SQL", "JavaScript"] },
+  { label = "Languages", items = ["Python", "C/C++", "Go", "Java", "SQL", "JavaScript"], extra = ["MATLAB", "Scala"] },
   { label = "ML & Data", items = ["PyTorch", "scikit-learn", "pandas", "NumPy", "OpenCV", "LoRA"] },
   { label = "Tools", items = ["Linux", "Git", "Docker", "FastAPI", "PostgreSQL", "React"] },
 ]
